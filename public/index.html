@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garbage Percentage Estimator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 600px; margin: 30px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
+        h1 { text-align: center; color: #0056b3; }
+        .upload-section { margin-bottom: 20px; text-align: center; }
+        input[type="file"] { border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: block; width: calc(100% - 22px); margin: 0 auto 15px auto; }
+        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; }
+        button:hover { background-color: #0056b3; }
+        .image-preview { text-align: center; margin-top: 20px; }
+        .image-preview img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; }
+        .results-section { margin-top: 30px; padding: 15px; background-color: #e9ecef; border-radius: 5px; }
+        #loading { text-align: center; color: #007bff; font-weight: bold; margin-top: 15px; display: none; }
+        .error-message { color: #dc3545; font-weight: bold; margin-top: 10px; text-align: center; }
+        .result-item { margin-bottom: 10px; }
+        .result-label { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Garbage Percentage Estimator</h1>
+
+        <div class="upload-section">
+            <input type="file" id="imageUpload" accept="image/*">
+            <button onclick="uploadImage()">Estimate Percentage</button>
+            <div id="loading" style="display: none;">Processing... Please wait.</div>
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <div class="image-preview" id="imagePreview">
+            </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>Estimation Results:</h2>
+            <div class="result-item">
+                <span class="result-label">Garbage Percentage:</span> <span id="garbagePercentage"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Explanation:</span> <span id="explanation"></span>
+            </div>
+            </div>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const loadingDiv = document.getElementById('loading');
+        const resultsSection = document.getElementById('resultsSection');
+        const garbagePercentageSpan = document.getElementById('garbagePercentage');
+        const explanationSpan = document.getElementById('explanation');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        // const rawGeminiResponsePre = document.getElementById('rawGeminiResponse'); // For debugging
+
+        // Set this to your backend's URL
+        const backendUrl = 'http://localhost:5000/estimate_garbage'; 
+
+        imageUpload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Image Preview">`;
+                };
+                reader.readAsDataURL(file);
+                errorMessageDiv.textContent = ''; // Clear previous errors
+                resultsSection.style.display = 'none'; // Hide results
+            } else {
+                imagePreview.innerHTML = '';
+            }
+        });
+
+        async function uploadImage() {
+            const file = imageUpload.files[0];
+            if (!file) {
+                errorMessageDiv.textContent = 'Please select an image file first.';
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            errorMessageDiv.textContent = '';
+            resultsSection.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.garbage_percentage !== undefined) {
+                    garbagePercentageSpan.textContent = `${data.garbage_percentage}%`;
+                    explanationSpan.textContent = data.explanation || 'No explanation provided.';
+                    // rawGeminiResponsePre.textContent = data.raw_gemini_response || 'N/A'; // For debugging
+                    resultsSection.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Unexpected response format from backend.');
+                }
+                
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                errorMessageDiv.textContent = `Error: ${error.message}. Please try again.`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
