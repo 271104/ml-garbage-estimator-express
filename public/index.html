@@ -3,87 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garbage Percentage Estimator</title>
+    <title>ML Garbage Estimator - Environmental Analysis</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 600px; margin: 30px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
-        h1 { text-align: center; color: #0056b3; }
-        .upload-section { margin-bottom: 20px; text-align: center; }
-        input[type="file"] { border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: block; width: calc(100% - 22px); margin: 0 auto 15px auto; }
-        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; }
-        button:hover { background-color: #0056b3; }
-        .image-preview { text-align: center; margin-top: 20px; }
-        .image-preview img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; }
-        .results-section { margin-top: 30px; padding: 15px; background-color: #e9ecef; border-radius: 5px; }
-        #loading { text-align: center; color: #007bff; font-weight: bold; margin-top: 15px; display: none; }
-        .error-message { color: #dc3545; font-weight: bold; margin-top: 10px; text-align: center; }
-        .result-item { margin-bottom: 10px; }
-        .result-label { font-weight: bold; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 20px auto; 
+            background-color: #fff; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+            border-radius: 16px; 
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 2em; 
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+        .content { padding: 30px; }
+        .upload-section { 
+            margin-bottom: 30px; 
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            background-color: #f8f9ff;
+        }
+        input[type="file"] { 
+            display: none;
+        }
+        .file-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        .file-label:hover {
+            background-color: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 14px 40px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 17px; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .image-preview { 
+            text-align: center; 
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+        }
+        .image-preview img { 
+            max-width: 100%; 
+            max-height: 400px;
+            height: auto; 
+            border: 3px solid #667eea; 
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        .results-section { 
+            margin-top: 30px; 
+            padding: 25px; 
+            background: linear-gradient(135deg, #f8f9ff 0%, #e9ecff 100%);
+            border-radius: 12px;
+            border: 2px solid #667eea;
+        }
+        .results-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            text-align: center;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin: 10px 0;
+            text-transform: uppercase;
+        }
+        .status-very-clean { background-color: #10b981; color: white; }
+        .status-clean { background-color: #3b82f6; color: white; }
+        .status-moderately-dirty { background-color: #f59e0b; color: white; }
+        .status-dirty { background-color: #ef4444; color: white; }
+        .status-very-dirty { background-color: #dc2626; color: white; }
+        .percentage-display {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: #667eea;
+        }
+        #loading { 
+            text-align: center; 
+            color: #667eea; 
+            font-weight: bold; 
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message { 
+            color: #dc2626; 
+            font-weight: bold; 
+            margin: 15px 0;
+            text-align: center;
+            padding: 15px;
+            background-color: #fee;
+            border-radius: 8px;
+            border: 1px solid #dc2626;
+        }
+        .result-item { 
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .result-label { 
+            font-weight: 700; 
+            color: #667eea;
+            font-size: 1.2em;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .result-value {
+            color: #333;
+            line-height: 1.8;
+            font-size: 1em;
+        }
+        .result-value strong {
+            color: #667eea;
+            font-size: 1.05em;
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        .result-value strong:first-child {
+            margin-top: 0;
+        }
+        .result-value br + br {
+            display: block;
+            content: "";
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Garbage Percentage Estimator</h1>
-
-        <div class="upload-section">
-            <input type="file" id="imageUpload" accept="image/*">
-            <button onclick="uploadImage()">Estimate Percentage</button>
-            <div id="loading" style="display: none;">Processing... Please wait.</div>
-            <div id="errorMessage" class="error-message"></div>
+        <div class="header">
+            <h1>🌍 ML Garbage Estimator</h1>
+            <p>AI-Powered Environmental Analysis using Google Gemini 1.5 Flash</p>
         </div>
 
-        <div class="image-preview" id="imagePreview">
+        <div class="content">
+            <div class="upload-section">
+                <label for="imageUpload" class="file-label">
+                    📁 Choose Area Image
+                </label>
+                <input type="file" id="imageUpload" accept="image/*">
+                <br>
+                <button onclick="uploadImage()" id="analyzeBtn">
+                    🔍 Analyze Garbage Level
+                </button>
+                <div id="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Analyzing image with AI... Please wait.</p>
+                </div>
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
             </div>
 
-        <div class="results-section" id="resultsSection" style="display: none;">
-            <h2>Estimation Results:</h2>
-            <div class="result-item">
-                <span class="result-label">Garbage Percentage:</span> <span id="garbagePercentage"></span>
+            <div class="image-preview" id="imagePreview" style="display: none;"></div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h2>📊 Analysis Results</h2>
+                
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <div class="percentage-display" id="garbagePercentage"></div>
+                    <div id="cleanlinessStatusBadge"></div>
+                </div>
+
+                <div class="result-item">
+                    <span class="result-label">📝 Detailed Analysis:</span>
+                    <div class="result-value" id="explanation"></div>
+                </div>
             </div>
-            <div class="result-item">
-                <span class="result-label">Explanation:</span> <span id="explanation"></span>
-            </div>
-            </div>
+        </div>
     </div>
 
     <script>
+        // DOM Elements
         const imageUpload = document.getElementById('imageUpload');
         const imagePreview = document.getElementById('imagePreview');
         const loadingDiv = document.getElementById('loading');
         const resultsSection = document.getElementById('resultsSection');
         const garbagePercentageSpan = document.getElementById('garbagePercentage');
-        const explanationSpan = document.getElementById('explanation');
+        const cleanlinessStatusBadge = document.getElementById('cleanlinessStatusBadge');
+        const explanationDiv = document.getElementById('explanation');
         const errorMessageDiv = document.getElementById('errorMessage');
-        // const rawGeminiResponsePre = document.getElementById('rawGeminiResponse'); // For debugging
+        const analyzeBtn = document.getElementById('analyzeBtn');
 
-        // Set this to your backend's URL
-        const backendUrl = 'http://localhost:5000/estimate_garbage'; 
+        // ✅ FIXED: Correct backend URL with proper port and /api prefix
+        const backendUrl = 'http://localhost:8000/api/estimate_garbage';
 
+        // Helper: Get status badge class based on cleanliness status
+        function getStatusClass(status) {
+            const statusMap = {
+                'VERY CLEAN': 'status-very-clean',
+                'CLEAN': 'status-clean',
+                'MODERATELY DIRTY': 'status-moderately-dirty',
+                'DIRTY': 'status-dirty',
+                'VERY DIRTY': 'status-very-dirty'
+            };
+            return statusMap[status] || 'status-clean';
+        }
+
+        // Event: Image file selection
         imageUpload.addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Image Preview">`;
+                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Selected Area Image">`;
+                    imagePreview.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
-                errorMessageDiv.textContent = ''; // Clear previous errors
-                resultsSection.style.display = 'none'; // Hide results
+                errorMessageDiv.style.display = 'none';
+                errorMessageDiv.textContent = '';
+                resultsSection.style.display = 'none';
             } else {
                 imagePreview.innerHTML = '';
+                imagePreview.style.display = 'none';
             }
         });
 
+        // Main Function: Upload and analyze image
         async function uploadImage() {
             const file = imageUpload.files[0];
+            
             if (!file) {
-                errorMessageDiv.textContent = 'Please select an image file first.';
+                errorMessageDiv.textContent = '⚠️ Please select an image file first.';
+                errorMessageDiv.style.display = 'block';
                 return;
             }
 
+            // Show loading state
             loadingDiv.style.display = 'block';
+            errorMessageDiv.style.display = 'none';
             errorMessageDiv.textContent = '';
             resultsSection.style.display = 'none';
+            analyzeBtn.disabled = true;
 
             const formData = new FormData();
             formData.append('image', file);
@@ -96,25 +317,40 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
                 }
 
                 const data = await response.json();
+                console.log('API Response:', data); // Debug log
                 
                 if (data.garbage_percentage !== undefined) {
+                    // Display garbage percentage
                     garbagePercentageSpan.textContent = `${data.garbage_percentage}%`;
-                    explanationSpan.textContent = data.explanation || 'No explanation provided.';
-                    // rawGeminiResponsePre.textContent = data.raw_gemini_response || 'N/A'; // For debugging
+                    
+                    // Display cleanliness status badge
+                    const status = data.cleanliness_status || 'UNKNOWN';
+                    const statusClass = getStatusClass(status);
+                    cleanlinessStatusBadge.innerHTML = `<span class="status-badge ${statusClass}">${status}</span>`;
+                    
+                    // Display detailed explanation
+                    explanationDiv.innerHTML = data.explanation.replace(/\n/g, '<br>') || 'No explanation provided.';
+                    
+                    // Show results section
                     resultsSection.style.display = 'block';
+                    
+                    // Smooth scroll to results
+                    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 } else {
-                    throw new Error(data.error || 'Unexpected response format from backend.');
+                    throw new Error(data.error || 'Unexpected response format from server.');
                 }
                 
             } catch (error) {
                 console.error('Error uploading image:', error);
-                errorMessageDiv.textContent = `Error: ${error.message}. Please try again.`;
+                errorMessageDiv.textContent = `❌ Error: ${error.message}. Please try again.`;
+                errorMessageDiv.style.display = 'block';
             } finally {
                 loadingDiv.style.display = 'none';
+                analyzeBtn.disabled = false;
             }
         }
     </script>

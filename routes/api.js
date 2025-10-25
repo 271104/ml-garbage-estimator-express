@@ -30,15 +30,41 @@ router.post('/estimate_garbage', upload.single('image'), async (req, res) => {
     const mimeType = req.file.mimetype;
     const model = getGenerativeModel(); // Get initialized Gemini model
 
-    // 🧠 Prompt for Gemini
+    // 🧠 Optimized Prompt for Sensitive Garbage Analysis
     const prompt = `
-      Analyze this image and estimate the percentage of the area covered by visible garbage 
-      (e.g., plastic, paper, food waste). Provide only a numerical percentage followed by 
-      a short explanation of what you observe.
-      
-      Example: "70% garbage, 30% clean area. Explanation: Plastics, paper, and some organic waste cover most of the ground."
-      
-      Respond in this format: "XX% garbage, YY% clean area. Explanation: ..."
+You are a STRICT environmental analyst. Analyze this image with HIGH SENSITIVITY to garbage and waste.
+
+**IMPORTANT ASSESSMENT RULES:**
+- If you see ANY visible garbage/waste, estimate HIGHER percentages (60-90%)
+- Be strict: even scattered garbage = significant coverage
+- Clean areas = 0-15% only
+- Slightly dirty = 20-35%
+- Visibly dirty/garbage present = 60-85%
+- Heavily polluted = 85-100%
+
+**FORMAT YOUR RESPONSE EXACTLY AS:**
+
+Garbage Percentage: XX%
+Cleanliness Status: [VERY CLEAN/CLEAN/MODERATELY DIRTY/DIRTY/VERY DIRTY]
+
+GARBAGE TYPES:
+List 2-4 main types only (e.g., Plastic bottles, Food waste, Paper)
+
+DISTRIBUTION:
+One short sentence about how garbage is spread
+
+IMPACT:
+One short sentence about main environmental concern
+
+RECOMMENDATIONS:
+- First action
+- Second action
+
+**OUTPUT RULES:**
+- Be concise - max 2-3 words per garbage type
+- Keep each section to 1-2 short sentences
+- Make percentage match the status (DIRTY = 60-80%, VERY DIRTY = 80-100%)
+- If garbage is visible, don't underestimate the percentage
     `;
 
     // 🧩 Generate content with Gemini
@@ -51,7 +77,7 @@ router.post('/estimate_garbage', upload.single('image'), async (req, res) => {
     const responseText = response.text();
 
     // 🧹 Parse Gemini output
-    const { garbagePercentage, explanation, error } = parseGeminiResponse(responseText);
+    const { garbagePercentage, cleanlinessStatus, explanation, error } = parseGeminiResponse(responseText);
 
     if (error) {
       return res.status(500).json({
@@ -60,9 +86,10 @@ router.post('/estimate_garbage', upload.single('image'), async (req, res) => {
       });
     }
 
-    // ✅ Successful response
+    // ✅ Successful response with comprehensive analytics
     res.json({
       garbage_percentage: garbagePercentage,
+      cleanliness_status: cleanlinessStatus,
       explanation,
       raw_gemini_response: responseText,
     });
