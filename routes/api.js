@@ -30,17 +30,35 @@ router.post('/estimate_garbage', upload.single('image'), async (req, res) => {
     const mimeType = req.file.mimetype;
     const model = getGenerativeModel(); // Get initialized Gemini model
 
-    // 🧠 Optimized Prompt for Sensitive Garbage Analysis
+    // 🧠 Smart Prompt for Accurate Garbage Detection
     const prompt = `
-You are a STRICT environmental analyst. Analyze this image with HIGH SENSITIVITY to garbage and waste.
+You are an INTELLIGENT environmental analyst. Analyze this image to detect ACTUAL GARBAGE and WASTE.
 
-**IMPORTANT ASSESSMENT RULES:**
-- If you see ANY visible garbage/waste, estimate HIGHER percentages (60-90%)
-- Be strict: even scattered garbage = significant coverage
-- Clean areas = 0-15% only
-- Slightly dirty = 20-35%
-- Visibly dirty/garbage present = 60-85%
-- Heavily polluted = 85-100%
+**CRITICAL: WHAT IS GARBAGE vs WHAT IS NOT:**
+
+✅ GARBAGE/WASTE (count these):
+- Plastic bags, bottles, wrappers, containers
+- Food waste, organic waste, rotten materials
+- Paper trash, cardboard scraps
+- Metal cans, broken items
+- Discarded clothing, textiles
+- Accumulated piles of trash
+
+❌ NOT GARBAGE (ignore these):
+- Bare ground, dirt, dust, soil
+- Clean footpaths, sidewalks, roads
+- Natural vegetation, grass, leaves
+- Construction materials in organized piles
+- People cleaning (brooms, sweepers) = CLEAN area
+- Empty maintained spaces
+
+**ASSESSMENT LOGIC:**
+1. If people are actively CLEANING/SWEEPING → Area is CLEAN or VERY CLEAN (0-15%)
+2. No visible trash items → VERY CLEAN (0-10%)
+3. Few scattered trash items → CLEAN (10-20%)
+4. Some visible garbage → MODERATELY DIRTY (30-50%)
+5. Multiple trash piles/items → DIRTY (60-80%)
+6. Overwhelming trash everywhere → VERY DIRTY (80-100%)
 
 **FORMAT YOUR RESPONSE EXACTLY AS:**
 
@@ -48,23 +66,23 @@ Garbage Percentage: XX%
 Cleanliness Status: [VERY CLEAN/CLEAN/MODERATELY DIRTY/DIRTY/VERY DIRTY]
 
 GARBAGE TYPES:
-List 2-4 main types only (e.g., Plastic bottles, Food waste, Paper)
+List 2-4 actual waste items you see (or write "Minimal visible waste" if clean)
 
 DISTRIBUTION:
-One short sentence about how garbage is spread
+One short sentence about garbage spread (or "Area appears clean" if no trash)
 
 IMPACT:
-One short sentence about main environmental concern
+One short sentence about concern (or "No immediate concern" if clean)
 
 RECOMMENDATIONS:
-- First action
-- Second action
+- Action 1
+- Action 2
 
-**OUTPUT RULES:**
-- Be concise - max 2-3 words per garbage type
-- Keep each section to 1-2 short sentences
-- Make percentage match the status (DIRTY = 60-80%, VERY DIRTY = 80-100%)
-- If garbage is visible, don't underestimate the percentage
+**RULES:**
+- Analyze CAREFULLY - don't confuse dirt with garbage
+- If you see cleaning activity, rate as CLEAN
+- Be ACCURATE - look for actual waste items pixel by pixel
+- Match percentage to status consistently
     `;
 
     // 🧩 Generate content with Gemini
